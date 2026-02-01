@@ -11,15 +11,18 @@
             margin: 0;
             overflow: hidden;
             height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .card {
             background-color: white;
-            padding: 40px;
+            padding: 40px 25px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             text-align: center;
-            max-width: 420px;
-            margin: 40px auto;
+            max-width: 90%;
+            width: 380px;
             position: relative;
             z-index: 20;
             transition: all 0.8s ease;
@@ -30,48 +33,53 @@
         }
         h1 {
             color: #e91e63;
-            font-size: 26px;
+            font-size: 24px;
             margin: 10px 0 30px;
+            line-height: 1.3;
         }
         .buttons {
             display: flex;
             justify-content: center;
             gap: 30px;
             margin: 20px 0;
+            flex-wrap: wrap;
         }
         button {
-            padding: 14px 32px;
+            padding: 14px 36px;
             border: none;
             border-radius: 50px;
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
+            min-width: 120px;
         }
         #yesBtn {
             background: #e91e63;
             color: white;
         }
-        #yesBtn:hover {
+        #yesBtn:hover, #yesBtn:active {
             background: #c2185b;
             transform: scale(1.08);
         }
         #noBtn {
             background: #9e9e9e;
             color: white;
+            position: relative;
         }
-        #noBtn:hover {
+        #noBtn:hover, #noBtn:active {
             background: #757575;
         }
         #response {
             margin-top: 30px;
-            font-size: 2.8rem;
+            font-size: 2.5rem;
             color: #e91e63;
             display: none;
             animation: pulse 1.5s infinite;
+            line-height: 1.2;
         }
         .footer {
-            margin-top: 40px;
+            margin-top: 35px;
             font-size: 0.9rem;
             color: #e91e63;
             opacity: 0.8;
@@ -86,10 +94,9 @@
             animation: pulse 2s infinite;
         }
 
-        /* Animations */
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.12); }
+            50% { transform: scale(1.1); }
         }
         @keyframes float {
             0% { transform: translateY(0) rotate(0deg); opacity: 1; }
@@ -106,6 +113,13 @@
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-25px); }
+        }
+
+        @media (max-width: 480px) {
+            .card { padding: 30px 20px; }
+            h1 { font-size: 22px; }
+            button { padding: 12px 28px; font-size: 16px; min-width: 100px; }
+            #response { font-size: 2.2rem; }
         }
     </style>
 </head>
@@ -142,7 +156,6 @@
         let fireworks = [];
         let particles = [];
 
-        // Resize canvas
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -163,7 +176,7 @@
                 this.distance = Math.hypot(this.targetX - this.sx, this.targetY - this.sy);
                 this.traveled = 0;
                 this.exploded = false;
-                this.color = `hsl(${Math.random() * 40 + 330}, 100%, 60%)`; // pink-red range
+                this.color = `hsl(${Math.random() * 40 + 330}, 100%, 60%)`;
             }
 
             update() {
@@ -193,7 +206,6 @@
                 const count = 90;
                 for (let i = 0; i < count; i++) {
                     const t = (i / count) * Math.PI * 2;
-                    // Classic heart parametric equation
                     const x = 16 * Math.pow(Math.sin(t), 3);
                     const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
                     const scale = 5 + Math.random() * 3;
@@ -260,8 +272,9 @@
         }
         animate();
 
-        // No button escapes
-        noBtn.addEventListener('mouseover', () => {
+        // Dodging logic - works on desktop hover + mobile touch
+        function dodge(e) {
+            if (e.type === 'touchstart') e.preventDefault();
             const rect = card.getBoundingClientRect();
             const btnRect = noBtn.getBoundingClientRect();
             const maxX = rect.width - btnRect.width - 60;
@@ -269,9 +282,11 @@
             noBtn.style.position = 'absolute';
             noBtn.style.left = Math.random() * maxX + 'px';
             noBtn.style.top = Math.random() * maxY + 'px';
-        });
+        }
 
-        // Yes → magic!
+        noBtn.addEventListener('mouseover', dodge);
+        noBtn.addEventListener('touchstart', dodge);
+
         yesBtn.addEventListener('click', () => {
             noBtn.style.display = 'none';
             yesBtn.style.display = 'none';
@@ -291,7 +306,6 @@
             createHeartBurst(50);
             createConfetti(120);
 
-            // Romantic sounds
             const heartbeat = document.getElementById('heartbeatSound');
             const chime = document.getElementById('romanticChime');
             if (heartbeat) {
@@ -305,7 +319,6 @@
                 setTimeout(() => chime.play().catch(() => {}), 600);
             }
 
-            // Heart fireworks!
             for (let i = 0; i < 9; i++) {
                 setTimeout(() => {
                     fireworks.push(new Firework());
