@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Be My Valentine? ❤️</title>
+    <style>
+        body {
+            background-color: #ffebee;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .card {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            text-align: center;
+            max-width: 420px;
+            margin: 40px auto;
+            position: relative;
+            z-index: 20;
+            transition: all 0.8s ease;
+        }
+        .bear {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        h1 {
+            color: #e91e63;
+            font-size: 26px;
+            margin: 10px 0 30px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #yesBtn {
+            background: #e91e63;
+            color: white;
+        }
+        #yesBtn:hover {
+            background: #c2185b;
+            transform: scale(1.08);
+        }
+        #noBtn {
+            background: #9e9e9e;
+            color: white;
+        }
+        #noBtn:hover {
+            background: #757575;
+        }
+        #response {
+            margin-top: 30px;
+            font-size: 2.8rem;
+            color: #e91e63;
+            display: none;
+            animation: pulse 1.5s infinite;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 0.9rem;
+            color: #e91e63;
+            opacity: 0.8;
+            transition: all 0.3s;
+        }
+        .footer:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        .footer::before {
+            content: "❤️ ";
+            animation: pulse 2s infinite;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-900px) rotate(720deg); opacity: 0; }
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-50px) rotate(0deg); }
+            100% { transform: translateY(120vh) rotate(1080deg); opacity: 0; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-25px); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworksCanvas" style="position: fixed; inset: 0; pointer-events: none; z-index: 5;"></canvas>
+
+    <audio id="heartbeatSound" preload="auto">
+        <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_2d2b7d6e8c.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="romanticChime" preload="auto">
+        <source src="https://cdn.pixabay.com/audio/2023/08/07/audio_8f0b0e5d4a.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="card">
+        <div class="bear">🐻❤️</div>
+        <h1>Will you be my Valentine?</h1>
+        <div class="buttons">
+            <button id="yesBtn">Yes</button>
+            <button id="noBtn">No</button>
+        </div>
+        <div id="response"></div>
+        <div class="footer">Made with ❤️ by Abhishek Jaiswal</div>
+    </div>
+
+    <script>
+        const noBtn = document.getElementById('noBtn');
+        const yesBtn = document.getElementById('yesBtn');
+        const response = document.getElementById('response');
+        const card = document.querySelector('.card');
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let fireworks = [];
+        let particles = [];
+
+        // Resize canvas
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Firework {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height;
+                this.sx = this.x;
+                this.sy = canvas.height;
+                this.targetX = Math.random() * canvas.width;
+                this.targetY = Math.random() * (canvas.height / 3) + 60;
+                this.speed = Math.random() * 3 + 5;
+                this.angle = Math.atan2(this.targetY - this.sy, this.targetX - this.sx);
+                this.distance = Math.hypot(this.targetX - this.sx, this.targetY - this.sy);
+                this.traveled = 0;
+                this.exploded = false;
+                this.color = `hsl(${Math.random() * 40 + 330}, 100%, 60%)`; // pink-red range
+            }
+
+            update() {
+                if (!this.exploded) {
+                    this.traveled += this.speed;
+                    this.x = this.sx + Math.cos(this.angle) * this.traveled;
+                    this.y = this.sy + Math.sin(this.angle) * this.traveled;
+                    if (this.traveled >= this.distance) this.explode();
+                }
+            }
+
+            draw() {
+                if (!this.exploded) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = this.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            explode() {
+                this.exploded = true;
+                const count = 90;
+                for (let i = 0; i < count; i++) {
+                    const t = (i / count) * Math.PI * 2;
+                    // Classic heart parametric equation
+                    const x = 16 * Math.pow(Math.sin(t), 3);
+                    const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                    const scale = 5 + Math.random() * 3;
+                    const px = this.x + x * scale;
+                    const py = this.y + y * scale * 0.9;
+                    const p = new Particle(px, py, this.color);
+                    p.angle = Math.atan2(py - this.y, px - this.x);
+                    particles.push(p);
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.angle = 0;
+                this.speed = Math.random() * 4 + 2;
+                this.friction = 0.97;
+                this.gravity = 0.07;
+                this.size = Math.random() * 3 + 1.2;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.008;
+            }
+
+            update() {
+                this.speed *= this.friction;
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed + this.gravity;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            fireworks = fireworks.filter(fw => {
+                fw.update();
+                fw.draw();
+                return !fw.exploded || particles.length > 0;
+            });
+
+            particles = particles.filter(p => {
+                p.update();
+                p.draw();
+                return p.alpha > 0;
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // No button escapes
+        noBtn.addEventListener('mouseover', () => {
+            const rect = card.getBoundingClientRect();
+            const btnRect = noBtn.getBoundingClientRect();
+            const maxX = rect.width - btnRect.width - 60;
+            const maxY = rect.height - btnRect.height - 60;
+            noBtn.style.position = 'absolute';
+            noBtn.style.left = Math.random() * maxX + 'px';
+            noBtn.style.top = Math.random() * maxY + 'px';
+        });
+
+        // Yes → magic!
+        yesBtn.addEventListener('click', () => {
+            noBtn.style.display = 'none';
+            yesBtn.style.display = 'none';
+
+            response.innerHTML = 'YAYYY! ❤️❤️❤️<br>You said YES!! 🥰';
+            response.style.display = 'block';
+
+            card.style.background = 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)';
+
+            const bear = document.createElement('div');
+            bear.innerHTML = '🐻💕';
+            bear.style.fontSize = '90px';
+            bear.style.margin = '25px auto';
+            bear.style.animation = 'bounce 2s infinite';
+            response.parentNode.insertBefore(bear, response.nextSibling);
+
+            createHeartBurst(50);
+            createConfetti(120);
+
+            // Romantic sounds
+            const heartbeat = document.getElementById('heartbeatSound');
+            const chime = document.getElementById('romanticChime');
+            if (heartbeat) {
+                heartbeat.volume = 0.55;
+                heartbeat.currentTime = 0;
+                heartbeat.play().catch(() => {});
+            }
+            if (chime) {
+                chime.volume = 0.45;
+                chime.currentTime = 0;
+                setTimeout(() => chime.play().catch(() => {}), 600);
+            }
+
+            // Heart fireworks!
+            for (let i = 0; i < 9; i++) {
+                setTimeout(() => {
+                    fireworks.push(new Firework());
+                }, i * 280 + Math.random() * 180);
+            }
+        });
+
+        function createHeartBurst(count) {
+            for (let i = 0; i < count; i++) {
+                const heart = document.createElement('div');
+                heart.textContent = '❤️';
+                heart.style.position = 'absolute';
+                heart.style.fontSize = (Math.random() * 40 + 24) + 'px';
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.top = (Math.random() * 60 + 60) + 'px';
+                heart.style.opacity = Math.random() * 0.6 + 0.4;
+                heart.style.pointerEvents = 'none';
+                heart.style.zIndex = '15';
+                heart.style.animation = `float ${Math.random() * 6 + 5}s linear forwards, spin ${Math.random() * 5 + 4}s linear infinite`;
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), 9000);
+            }
+        }
+
+        function createConfetti(count) {
+            const colors = ['#ff4081','#f50057','#ff80ab','#ffecb3','#ffe0b2','#fff176','#ffca28'];
+            for (let i = 0; i < count; i++) {
+                const conf = document.createElement('div');
+                conf.textContent = Math.random() > 0.65 ? '❤️' : ['🎉','✨','💖','🌸'][Math.floor(Math.random()*4)];
+                conf.style.position = 'absolute';
+                conf.style.fontSize = (Math.random() * 24 + 14) + 'px';
+                conf.style.left = Math.random() * 100 + 'vw';
+                conf.style.top = '-40px';
+                conf.style.color = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.opacity = Math.random() * 0.7 + 0.3;
+                conf.style.pointerEvents = 'none';
+                conf.style.zIndex = '10';
+                conf.style.transform = `rotate(${Math.random()*360}deg)`;
+                conf.style.animation = `confetti-fall ${Math.random()*6 + 4}s linear forwards`;
+                document.body.appendChild(conf);
+                setTimeout(() => conf.remove(), 10000);
+            }
+        }
+    </script>
+</body>
+</html>
